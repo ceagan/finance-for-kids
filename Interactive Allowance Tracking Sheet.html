@@ -1,0 +1,455 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Allowance Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            margin: 0.5in;
+            font-size: 16px;
+            line-height: 1.3;
+            background-color: #f9f9f9;
+        }
+        .container {
+            width: 7.5in;
+            height: 10in;
+            border: 2px solid #ffcc00;
+            border-radius: 15px;
+            padding: 0.3in;
+            box-sizing: border-box;
+            background: url('https://www.transparenttextures.com/patterns/canvas.png'), linear-gradient(135deg, #fff, #f0f8ff);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 0.3in;
+            background-color: #ffeb3b;
+            border-radius: 10px;
+            padding: 8px;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin: 0;
+            color: #d81b60;
+            text-shadow: 1px 1px 2px #fff;
+            display: inline;
+        }
+        .header #nameSpan {
+            cursor: pointer;
+        }
+        .header #nameInput {
+            font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
+            font-size: 28px;
+            color: #d81b60;
+            text-shadow: 1px 1px 2px #fff;
+            border: none;
+            background: none;
+            width: auto;
+            padding: 0;
+            margin: 0;
+            outline: none;
+        }
+        .header input {
+            font-size: 16px;
+            border: 2px dotted #2196f3;
+            border-radius: 5px;
+            margin: 0 5px;
+            padding: 2px;
+            width: 40px;
+            background-color: #e3f2fd;
+        }
+        .split-section {
+            margin: 0.2in 0;
+            text-align: center;
+        }
+        .split-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #2196f3;
+            border-radius: 10px;
+            padding: 8px;
+        }
+        .split-inputs {
+            display: grid;
+            grid-template-columns: auto 50px;
+            gap: 6px;
+            margin-right: 15px;
+            width: 140px;
+            align-items: center;
+        }
+        .split-inputs label {
+            text-align: right;
+            margin-right: 5px;
+            font-size: 14px;
+        }
+        .split-inputs input {
+            width: 36px;
+            font-size: 12px;
+            border: none;
+            border-radius: 5px;
+            padding: 3px;
+            text-align: center;
+            color: #fff;
+        }
+        #savePercent { background-color: #4caf50; }
+        #spendPercent { background-color: #ff9800; }
+        #sharePercent { background-color: #f44336; }
+        .chart-container {
+            display: flex;
+            align-items: center;
+        }
+        .chart-canvas {
+            width: 100px;
+            height: 100px;
+            margin-right: 15px;
+        }
+        .dollar-amounts {
+            display: grid;
+            grid-template-columns: auto 50px;
+            gap: 6px;
+            align-items: center;
+        }
+        .dollar-amounts label {
+            text-align: right;
+            margin-right: 5px;
+            font-size: 14px;
+        }
+        .dollar-amounts span {
+            display: inline-block;
+            width: 40px;
+            font-size: 12px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            padding: 3px;
+            text-align: center;
+            background-color: #fff;
+            color: #333;
+        }
+        .account-section {
+            margin-bottom: 0.3in;
+            border-radius: 10px;
+            padding: 8px;
+        }
+        .save { background-color: #e8f5e9; border: 2px solid #4caf50; }
+        .spend { background-color: #fff3e0; border: 2px solid #ff9800; }
+        .share { background-color: #ffebee; border: 2px solid #f44336; }
+        .account-section h2 {
+            font-size: 20px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            color: #333;
+        }
+        .account-section img {
+            width: 28px;
+            height: 28px;
+            margin-right: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 5px;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 6px;
+            text-align: center;
+            height: 0.35in;
+            font-size: 12px;
+        }
+        th {
+            background-color: #bbdefb;
+            font-size: 12px;
+            color: #333;
+        }
+        td { background-color: #fafafa; }
+        .instructions {
+            margin-top: 0.2in;
+            font-size: 11px;
+            border-top: 2px dashed #2196f3;
+            padding-top: 8px;
+            color: #555;
+            text-align: center;
+        }
+        @media print {
+            body {
+                margin: 0;
+                background: none;
+            }
+            .container {
+                border: none;
+                box-shadow: none;
+                background: none;
+                width: 8.5in;
+                height: 11in;
+                padding: 0.5in;
+            }
+            .progress div {
+                background-color: #fff !important;
+            }
+            .chart-container canvas {
+                display: none;
+            }
+            .split-inputs input {
+                background-color: #fff !important;
+                color: #000 !important;
+                border: 2px dotted #2196f3 !important;
+            }
+            .split-content {
+                border: none !important;
+            }
+            .header, .account-section, .instructions {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span id="nameSpan">My</span> Allowance Tracker</h1>
+            <p>Age: <input type="number" id="age" min="0" value="5"></p>
+            <div class="split-section">
+                <div class="split-content">
+                    <div class="split-inputs">
+                        <label for="savePercent">Save:</label>
+                        <input type="number" id="savePercent" min="0" max="100" value="50">
+                        <label for="spendPercent">Spend:</label>
+                        <input type="number" id="spendPercent" min="0" max="100" value="30">
+                        <label for="sharePercent">Share:</label>
+                        <input type="number" id="sharePercent" min="0" max="100" value="20" readonly>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-canvas">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                        <div class="dollar-amounts">
+                            <label for="saveAmount">Save:</label>
+                            <span id="saveAmount">$2.50</span>
+                            <label for="spendAmount">Spend:</label>
+                            <span id="spendAmount">$1.50</span>
+                            <label for="shareAmount">Share:</label>
+                            <span id="shareAmount">$1.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="account-section save">
+            <h2><img src="https://img.icons8.com/money-box" alt="Piggy Bank"> Save</h2>
+            <table>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>In (+)</th>
+                    <th>Out (-)</th>
+                    <th>Balance</th>
+                </tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            </table>
+        </div>
+
+        <div class="account-section spend">
+            <h2><img src="https://img.icons8.com/shopping-bag" alt="Shopping Bag"> Spend</h2>
+            <table>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>In (+)</th>
+                    <th>Out (-)</th>
+                    <th>Balance</th>
+                </tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            </table>
+        </div>
+
+        <div class="account-section share">
+            <h2><img src="https://img.icons8.com/like" alt="Heart"> Share</h2>
+            <table>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>In (+)</th>
+                    <th>Out (-)</th>
+                    <th>Balance</th>
+                </tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+            </table>
+        </div>
+
+        <div class="instructions">
+            <p><strong>Instructions:</strong> Help your kiddo record their weekly allowance and any spending or sharing. Use the Save account for big dreams, Spend for fun stuff, and Share for giving to others.</p>
+        </div>
+    </div>
+
+    <script>
+        // Element references
+        const nameSpan = document.getElementById('nameSpan');
+        const ageInput = document.getElementById('age');
+        const saveInput = document.getElementById('savePercent');
+        const spendInput = document.getElementById('spendPercent');
+        const shareInput = document.getElementById('sharePercent');
+        const saveAmount = document.getElementById('saveAmount');
+        const spendAmount = document.getElementById('spendAmount');
+        const shareAmount = document.getElementById('shareAmount');
+
+        // Title editing functionality
+        nameSpan.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.id = 'nameInput';
+            input.value = nameSpan.textContent;
+            input.style.width = `${nameSpan.offsetWidth}px`;
+            nameSpan.replaceWith(input);
+            input.focus();
+
+            const saveName = () => {
+                nameSpan.textContent = input.value.trim() || 'My';
+                input.replaceWith(nameSpan);
+            };
+
+            input.addEventListener('blur', saveName);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    saveName();
+                }
+            });
+        });
+
+        // Pie chart initialization
+        const ctx = document.getElementById('pieChart').getContext('2d');
+        const pieChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['Save', 'Spend', 'Share'],
+                datasets: [{
+                    data: [50, 30, 20],
+                    backgroundColor: ['#4caf50', '#ff9800', '#f44336'],
+                    borderColor: '#fff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+
+        // Update calculations and display
+        function updateValues() {
+            let savePercent = parseFloat(saveInput.value) || 0;
+            let spendPercent = parseFloat(spendInput.value) || 0;
+            let sharePercent = 100 - savePercent - spendPercent;
+            let allowance = parseFloat(ageInput.value) || 0;
+
+            if (sharePercent < 0) {
+                sharePercent = 0;
+                spendPercent = 100 - savePercent;
+                spendInput.value = spendPercent.toFixed(0);
+            }
+
+            shareInput.value = sharePercent.toFixed(0);
+
+            // Calculate dollar amounts
+            let saveDollars = allowance * (savePercent / 100);
+            let spendDollars = allowance * (spendPercent / 100);
+            let shareDollars = allowance * (sharePercent / 100);
+
+            // Round to two decimal places (cents)
+            saveDollars = Math.round(saveDollars * 100) / 100;
+            spendDollars = Math.round(spendDollars * 100) / 100;
+            shareDollars = allowance - saveDollars - spendDollars; // Adjust Share to ensure exact sum
+            shareDollars = Math.round(shareDollars * 100) / 100; // Ensure no partial pennies
+
+            // Adjust Share to match Allowance exactly
+            let total = saveDollars + spendDollars + shareDollars;
+            if (total !== allowance) {
+                shareDollars += allowance - total;
+                shareDollars = Math.round(shareDollars * 100) / 100;
+            }
+
+            // Display as monetary values
+            saveAmount.textContent = `$${saveDollars.toFixed(2)}`;
+            spendAmount.textContent = `$${spendDollars.toFixed(2)}`;
+            shareAmount.textContent = `$${shareDollars.toFixed(2)}`;
+
+            // Update pie chart
+            pieChart.data.datasets[0].data = [savePercent, spendPercent, sharePercent];
+            pieChart.update();
+        }
+
+        // Event listeners
+        saveInput.addEventListener('input', updateValues);
+        spendInput.addEventListener('input', updateValues);
+        ageInput.addEventListener('input', updateValues);
+
+        // Initial update
+        updateValues();
+    </script>
+</body>
+</html>
