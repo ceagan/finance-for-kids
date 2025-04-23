@@ -1,44 +1,6 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -52,6 +14,7 @@
             line-height: 1.3;
             background-color: #f9f9f9;
         }
+
         .container {
             width: 7.5in;
             height: 10in;
@@ -60,25 +23,35 @@
             padding: 0.3in;
             box-sizing: border-box;
             background: url('https://www.transparenttextures.com/patterns/canvas.png'), linear-gradient(135deg, #fff, #f0f8ff);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+
         .header {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             margin-bottom: 0.3in;
             background-color: #ffeb3b;
             border-radius: 10px;
             padding: 8px;
         }
+
+        .header .title-container {
+            text-align: center;
+            flex-grow: 1;
+        }
+
         .header h1 {
             font-size: 28px;
             margin: 0;
             color: #d81b60;
             text-shadow: 1px 1px 2px #fff;
-            display: inline;
         }
+
         .header #nameSpan {
             cursor: pointer;
         }
+
         .header #nameInput {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
             font-size: 28px;
@@ -91,19 +64,33 @@
             margin: 0;
             outline: none;
         }
+
         .header input {
             font-size: 16px;
             border: 2px dotted #2196f3;
             border-radius: 5px;
-            margin: 0 5px;
+            margin: 5px 0 0 0;
             padding: 2px;
+            text-align: center;
             width: 40px;
             background-color: #e3f2fd;
         }
+
+        .header img {
+            width: 40px;
+            height: 40px;
+            margin: 0 8px;
+        }
+
+        .header .parrot-right {
+            transform: scaleX(-1);
+        }
+
         .split-section {
             margin: 0.2in 0;
             text-align: center;
         }
+
         .split-content {
             display: flex;
             align-items: center;
@@ -112,6 +99,7 @@
             border-radius: 10px;
             padding: 8px;
         }
+
         .split-inputs {
             display: grid;
             grid-template-columns: auto 50px;
@@ -120,11 +108,13 @@
             width: 140px;
             align-items: center;
         }
+
         .split-inputs label {
             text-align: right;
             margin-right: 5px;
             font-size: 14px;
         }
+
         .split-inputs input {
             width: 36px;
             font-size: 12px;
@@ -134,29 +124,53 @@
             text-align: center;
             color: #fff;
         }
-        #savePercent { background-color: #4caf50; }
-        #spendPercent { background-color: #ff9800; }
-        #sharePercent { background-color: #f44336; }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+
+        #savePercent {
+            background-color: #4caf50;
+        }
+
+        #spendPercent {
+            background-color: #ff9800;
+        }
+
+        #sharePercent {
+            background-color: #f44336;
+        }
+
         .chart-container {
             display: flex;
             align-items: center;
         }
+
         .chart-canvas {
             width: 100px;
             height: 100px;
             margin-right: 15px;
         }
+
         .dollar-amounts {
             display: grid;
             grid-template-columns: auto 50px;
             gap: 6px;
             align-items: center;
         }
+
         .dollar-amounts label {
             text-align: right;
             margin-right: 5px;
             font-size: 14px;
         }
+
         .dollar-amounts span {
             display: inline-block;
             width: 40px;
@@ -168,14 +182,28 @@
             background-color: #fff;
             color: #333;
         }
+
         .account-section {
             margin-bottom: 0.3in;
             border-radius: 10px;
             padding: 8px;
         }
-        .save { background-color: #e8f5e9; border: 2px solid #4caf50; }
-        .spend { background-color: #fff3e0; border: 2px solid #ff9800; }
-        .share { background-color: #ffebee; border: 2px solid #f44336; }
+
+        .save {
+            background-color: #e8f5e9;
+            border: 2px solid #4caf50;
+        }
+
+        .spend {
+            background-color: #fff3e0;
+            border: 2px solid #ff9800;
+        }
+
+        .share {
+            background-color: #ffebee;
+            border: 2px solid #f44336;
+        }
+
         .account-section h2 {
             font-size: 20px;
             margin: 0;
@@ -183,11 +211,13 @@
             align-items: center;
             color: #333;
         }
+
         .account-section img {
             width: 28px;
             height: 28px;
             margin-right: 8px;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -196,19 +226,26 @@
             border-radius: 8px;
             overflow: hidden;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ccc;
             padding: 6px;
             text-align: center;
             height: 0.35in;
             font-size: 12px;
         }
+
         th {
             background-color: #bbdefb;
             font-size: 12px;
             color: #333;
         }
-        td { background-color: #fafafa; }
+
+        td {
+            background-color: #fafafa;
+        }
+
         .instructions {
             margin-top: 0.2in;
             font-size: 11px;
@@ -217,11 +254,13 @@
             color: #555;
             text-align: center;
         }
+
         @media print {
             body {
                 margin: 0;
                 background: none;
             }
+
             .container {
                 border: none;
                 box-shadow: none;
@@ -230,53 +269,65 @@
                 height: 11in;
                 padding: 0.5in;
             }
+
             .progress div {
                 background-color: #fff !important;
             }
+
             .chart-container canvas {
                 display: none;
             }
+
             .split-inputs input {
                 background-color: #fff !important;
                 color: #000 !important;
                 border: 2px dotted #2196f3 !important;
             }
+
             .split-content {
                 border: none !important;
             }
-            .header, .account-section, .instructions {
+
+            .header,
+            .account-section,
+            .instructions {
                 page-break-inside: avoid;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
-            <h1><span id="nameSpan">My</span> Allowance Tracker</h1>
-            <p>Age: <input type="number" id="age" min="0" value="5"></p>
-            <div class="split-section">
-                <div class="split-content">
-                    <div class="split-inputs">
-                        <label for="savePercent">Save:</label>
-                        <input type="number" id="savePercent" min="0" max="100" value="50">
-                        <label for="spendPercent">Spend:</label>
-                        <input type="number" id="spendPercent" min="0" max="100" value="30">
-                        <label for="sharePercent">Share:</label>
-                        <input type="number" id="sharePercent" min="0" max="100" value="20" readonly>
+            <img src="https://img.icons8.com/color/parrot" alt="Parrot">
+            <div class="title-container">
+                <h1><span id="nameSpan">My</span> Allowance Tracker</h1>
+                Age: <input type="number" id="age" min="0" value="5">
+            </div>
+            <img src="https://img.icons8.com/color/parrot" alt="Parrot" class="parrot-right">
+        </div>
+        <div class="split-section">
+            <div class="split-content">
+                <div class="split-inputs">
+                    <label for="savePercent">Save:</label>
+                    <input type="number" id="savePercent" min="0" max="100" value="50">
+                    <label for="spendPercent">Spend:</label>
+                    <input type="number" id="spendPercent" min="0" max="100" value="30">
+                    <label for="sharePercent">Share:</label>
+                    <input type="number" id="sharePercent" min="0" max="100" value="20" readonly>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-canvas">
+                        <canvas id="pieChart"></canvas>
                     </div>
-                    <div class="chart-container">
-                        <div class="chart-canvas">
-                            <canvas id="pieChart"></canvas>
-                        </div>
-                        <div class="dollar-amounts">
-                            <label for="saveAmount">Save:</label>
-                            <span id="saveAmount">$2.50</span>
-                            <label for="spendAmount">Spend:</label>
-                            <span id="spendAmount">$1.50</span>
-                            <label for="shareAmount">Share:</label>
-                            <span id="shareAmount">$1.00</span>
-                        </div>
+                    <div class="dollar-amounts">
+                        <label for="saveAmount">Save:</label>
+                        <span id="saveAmount">$2.50</span>
+                        <label for="spendAmount">Spend:</label>
+                        <span id="spendAmount">$1.50</span>
+                        <label for="shareAmount">Share:</label>
+                        <span id="shareAmount">$1.00</span>
                     </div>
                 </div>
             </div>
@@ -292,12 +343,48 @@
                     <th>Out (-)</th>
                     <th>Balance</th>
                 </tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
             </table>
         </div>
 
@@ -311,12 +398,48 @@
                     <th>Out (-)</th>
                     <th>Balance</th>
                 </tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
             </table>
         </div>
 
@@ -330,16 +453,47 @@
                     <th>Out (-)</th>
                     <th>Balance</th>
                 </tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
-                <tr><td></td><td></td><td></td><td></td><td></td></tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
             </table>
         </div>
 
         <div class="instructions">
-            <p><strong>Instructions:</strong> Help your kiddo record their weekly allowance and any spending or sharing. Use the Save account for big dreams, Spend for fun stuff, and Share for giving to others.</p>
+            <p><strong>Instructions:</strong> Help your kiddo record their weekly allowance and any spending or sharing.
+                Use the Save account for big dreams, Spend for fun stuff, and Share for giving to others.</p>
         </div>
     </div>
 
@@ -451,5 +605,7 @@
         // Initial update
         updateValues();
     </script>
+    <script>(function () { function c() { var b = a.contentDocument || a.contentWindow.document; if (b) { var d = b.createElement('script'); d.innerHTML = "window.__CF$cv$params={r:'9328c03bff3b6763',t:'MTc0NTAyNzQyNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);"; b.getElementsByTagName('head')[0].appendChild(d) } } if (document.body) { var a = document.createElement('iframe'); a.height = 1; a.width = 1; a.style.position = 'absolute'; a.style.top = 0; a.style.left = 0; a.style.border = 'none'; a.style.visibility = 'hidden'; document.body.appendChild(a); if ('loading' !== document.readyState) c(); else if (window.addEventListener) document.addEventListener('DOMContentLoaded', c); else { var e = document.onreadystatechange || function () { }; document.onreadystatechange = function (b) { e(b); 'loading' !== document.readyState && (document.onreadystatechange = e, c()) } } } })();</script>
 </body>
+
 </html>
