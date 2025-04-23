@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Money Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <img src="http://img.icons8.com/color/parrot" alt="parrot" />
+        <h1>My Money Tracker</h1>
+        <img src="http://img.icons8.com/color/parrot" alt="parrot" class="img-right" />
+    </header>
+    <main>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Income</th>
+                    <th>Share</th>
+                    <th>Save</th>
+                    <th>Spend</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tr class="first-row">
+                <td colspan="6">
+                    <div class="first-row-content">Starting Balance: <img
+                            src="https://img.icons8.com/?size=100&id=kmdFzwR3bBa9&format=png&color=000000"
+                            alt="arrow pointing right" class="right-arrow" /></div>
+                </td>
+                <td></td>
+            </tr>
+            <!-- <tr>
+                <td>4/22/2025</td>
+                <td>Paycheck</td>
+                <td>$6.00</td>
+                <td>$1.00</td>
+                <td>$3.00</td>
+                <td></td>
+                <td>$2.00</td>
+            </tr> -->
+        </table>
+    </main>
+
+    <script>
+        // Function to generate empty rows
+        function generateEmptyRows(rowCount) {
+            const tableBody = document.querySelector('table');
+            for (let i = 0; i < rowCount; i++) {
+                const row = document.createElement('tr');
+                for (let j = 0; j < 7; j++) {
+                    const cell = document.createElement('td');
+                    row.appendChild(cell);
+                }
+                tableBody.appendChild(row);
+            }
+        }
+
+        // Generate empty rows
+        document.addEventListener('DOMContentLoaded', () => {
+            generateEmptyRows(13);
+        });
+    </script>
+</body>
+
+</html>
