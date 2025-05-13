@@ -28,6 +28,10 @@ header {
     border-radius: 5px;
 }
 
+header img {
+    height: 50px;
+}
+
 header .img-right {
     transform: scaleX(-1);
 }
